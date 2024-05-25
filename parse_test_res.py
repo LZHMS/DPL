@@ -154,7 +154,7 @@ def main(args, end_signal):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory", type=str, help="path to directory")
+    parser.add_argument("--directory", type=str, help="path to directory")
     parser.add_argument(
         "--ci95", action="store_true", help=r"compute 95\% confidence interval"
     )

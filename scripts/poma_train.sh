@@ -17,11 +17,12 @@ CLASS_EQULE=$8  # CLASS_EQULE True of False
 TAG=$9 # log tag (multiple_models_random_init or rn50_random_init)
 FP=${10} # number of false positive training samples per class
 
-for SEED in {1..4}
+for SEED in {1..3}
 do  
     DIR=./output/${DATASET}/${TRAINER}/${CFG}_${SHOTS}shots_EQULE_${CLASS_EQULE}_${CONF_THRESHOLD}_${BLOCK}block_${TAG}/nctx${NCTX}_csc${CSC}_ctp${CTP}_fp${FP}/seed${SEED}
     if [ -d "$DIR" ]; then
         echo "Results are available in ${DIR}. Skip this job"
+        rm -rf ${DIR}
     else
         echo "Run this job and save the output to ${DIR}"
         python train.py \

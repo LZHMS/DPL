@@ -100,6 +100,8 @@ def extend_cfg(cfg, args):
     cfg.TRAINER.POMA.NUM_FP = args.num_fp  # false positive training samples per class
     cfg.TRAINER.POMA.USE_ROBUSTLOSS = args.use_robustloss  # use robust loss (GCE)
     cfg.TRAINER.POMA.N_BLOCK = 8  # number of prompt blocks
+    cfg.TRAINER.POMA.K = 6  # top-k similarities
+    cfg.TRAINER.POMA.TAU = 0.7
 
 def setup_cfg(args):
     cfg = get_cfg_default()
@@ -149,13 +151,16 @@ def main(args):
             trainer.load_model_by_id(args.model_dir, epoch=args.load_epoch, model_id=i)
         trainer_list.append(trainer)
 
-        #predict_label_dict = trainer.load_from_exist_file(file_path='./analyze_results', 
-        #model_names=cfg.MODEL.PSEUDO_LABEL_MODELS)
-
+        # make noisy few-shots dataset
         predict_label_dict = trainer.load_from_no_file()
-
         trainer.dm.update_ssdateloader(predict_label_dict)
         trainer.train_loader_sstrain = trainer.dm.train_loader_sstrain
+
+        # select the clean few-shots dataset
+        trainer.cls_confident_samples = [1 for _ in range(trainer.num_classes)]
+        split_clean_dataset = trainer.split_dataset_by_bisimilarities(0)
+        trainer.dm.split_ssdateloader(split_clean_dataset)
+        trainer.train_loader_sptrain = trainer.dm.train_loader_sptrain
         trainer.sstrain_with_id(model_id=i)
 
 if __name__ == '__main__':

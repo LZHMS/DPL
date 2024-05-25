@@ -166,3 +166,25 @@ class UPLDataManager(DataManager):
             dataset_wrapper=self.dataset_wrapper,
         )
         self.train_loader_sstrain = train_loader_sstrain
+    
+    def split_ssdateloader(self, split_label_dict):
+        """split the train_loader_sstrain to select the clean samples
+
+        Args:
+            split_label_dict ([dict]): [a dict {'imagepath': 'label'}]
+        """
+        sptrain = self.dataset.select_samples(split_label_dict)
+
+        train_loader_sptrain = build_data_loader(
+            self.cfg,
+            sampler_type="RandomSampler",
+            sampler=None,
+            data_source=sptrain,
+            batch_size=self.cfg.DATALOADER.TRAIN_X.BATCH_SIZE,
+            n_domain=self.cfg.DATALOADER.TRAIN_X.N_DOMAIN,
+            n_ins=1,
+            tfm=self.tfm_train,
+            is_train=True,
+            dataset_wrapper=self.dataset_wrapper,
+        )
+        self.train_loader_sptrain = train_loader_sptrain

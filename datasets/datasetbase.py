@@ -169,3 +169,16 @@ class UPLDatasetBase(DatasetBase):
 
         self.sstrain = sstrain
         return sstrain
+
+    def select_samples(self, predict_label_dict):
+        """select samples with training for self-supervised learning
+
+        Args:
+            predict_label_dict ([dict]): [a dict {'imagepath': 'label'}]
+        """
+        out = []
+        for item in self.sstrain:
+            sub_impath = './data/' + item.impath.split('/data/')[1]
+            if sub_impath in predict_label_dict:
+                out.append(item)
+        return out

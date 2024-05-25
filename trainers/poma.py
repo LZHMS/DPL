@@ -9,6 +9,7 @@ import numpy as np
 from tqdm import tqdm
 import json
 import pickle
+from sklearn.mixture import GaussianMixture
 
 import torch
 import torch.nn as nn
@@ -262,20 +263,17 @@ class CustomCLIP(nn.Module):
         prompts_matrix = self.prompt_learner()  # n_block, n_cls, *, ctx_dim
         tokenized_prompts = self.tokenized_prompts
         logits_matrix = torch.zeros(prompts_matrix.size(0), image_features.size(0), prompts_matrix.size(1))
-        text_center = None
+        texts_matrix = torch.zeros(prompts_matrix.size(0), prompts_matrix.size(1), image_features.size(1))
         for row in range(prompts_matrix.size(0)):
             prompts = prompts_matrix[row, :, :, :]
 
             text_features = self.text_encoder(prompts, tokenized_prompts)
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-            if text_center is None:
-                text_center = text_features
-            else:
-                text_center += text_features
 
             logits_matrix[row, :, :] = logit_scale * image_features @ text_features.t()
-        
-        return logits_matrix, image_features, text_center / prompts_matrix.size(0)
+            texts_matrix[row, :, :] = text_features
+
+        return logits_matrix, image_features, texts_matrix
 
 
 @TRAINER_REGISTRY.register()
@@ -394,7 +392,7 @@ class POMA(TrainerX):
         if (self.batch_idx + 1) == self.num_batches:
             self.update_lr()
 
-        return loss_summary
+        return logits_matrix, loss_summary
 
     def parse_batch_train(self, batch):
         input = batch["img"]
@@ -809,6 +807,14 @@ class POMA(TrainerX):
             self.before_epoch()
             self.run_epoch_with_sstrain()
             self.after_epoch(model_id)
+            
+            # select the clean few-shots dataset
+            #if (self.epoch + 1) % 5 == 0:
+            split_clean_dataset = self.split_dataset_by_bisimilarities(self.epoch)
+            self.dm.split_ssdateloader(split_clean_dataset)
+            self.train_loader_sptrain = self.dm.train_loader_sptrain
+            self.cls_confident_samples = [0 for _ in range(self.num_classes)]
+
             #if (self.epoch + 1) % 2 == 0:
             #    self.eval_train(self.epoch + 1)
 
@@ -819,12 +825,23 @@ class POMA(TrainerX):
         losses = MetricMeter()
         batch_time = AverageMeter()
         data_time = AverageMeter()
-        self.num_batches = len(self.train_loader_sstrain)
+        self.num_batches = len(self.train_loader_sptrain)
 
         end = time.time()
-        for self.batch_idx, batch in enumerate(self.train_loader_sstrain):
+        labels_list = []
+        img_paths = []
+        out_prob = []
+        pred_label = []
+        for self.batch_idx, batch in enumerate(self.train_loader_sptrain):
+            input, label, impath = self.parse_batch_test_with_impath(batch)
             data_time.update(time.time() - end)
-            loss_summary = self.forward_backward(batch)
+            logits, loss_summary = self.forward_backward(batch)
+            output = torch.mean(logits, dim=0).squeeze().detach().numpy()
+            out_prob.append(output.max(axis=1))
+            pred_label.append(output.argmax(axis=1))
+            labels_list.append(label.cpu())
+            img_paths.append(impath)
+
             batch_time.update(time.time() - end)
             losses.update(loss_summary)
 
@@ -863,6 +880,143 @@ class POMA(TrainerX):
             self.write_scalar("train/lr", self.get_current_lr(), n_iter)
 
             end = time.time()
+        
+        img_paths = np.concatenate(img_paths, axis=0)
+        noise_labels = np.concatenate(labels_list, axis=0)
+        out_prob = np.concatenate(out_prob, axis=0)
+        pred_label = np.concatenate(pred_label, axis=0)
+
+        # update the thredhold
+        for cls in range(self.num_classes):
+            cls_index = noise_labels == cls
+            cls_paths = img_paths[cls_index]
+            cls_prob = out_prob[cls_index]
+            cls_label = pred_label[cls_index]
+
+            for i in range(len(cls_paths)):
+                ip = './data/' + cls_paths[i].split('/data/')[1]
+                if cls_prob[i] > self.cfg.TRAINER.POMA.TAU and cls_label[i] == self.gt_label_dict[ip]:
+                    self.cls_confident_samples[cls] += 1
+
+    def split_dataset_by_bisimilarities(self, epoch):
+
+        def normalize(data):
+            mean = np.mean(data, axis=0)
+            std_dev = np.std(data, axis=0)
+
+            return (data - mean) / std_dev
+        
+        self.set_model_mode("eval")
+        self.model.eval()
+        self.evaluator.reset()
+
+        data_loader = self.train_loader_sstrain
+        image_features_list = []
+        labels_list = []
+        img_paths = []
+        texts_matrix = None        # n_block, n_cls, ctx_dim
+        from tqdm import tqdm
+        for _, batch in tqdm(enumerate(data_loader)):
+            input, label, impath = self.parse_batch_test_with_impath(batch)
+            _, image_features, texts_matrix = self.model(input)
+            image_features_list.append(image_features)
+            labels_list.append(label.cpu())
+            img_paths.append(impath)
+        sstrain_img_paths = np.concatenate(img_paths, axis=0)
+        image_features = torch.cat(image_features_list, axis=0)
+        noise_labels = np.concatenate(labels_list, axis=0)
+        
+        labels_list = []
+        for ip in sstrain_img_paths:
+            ip = './data/' + ip.split('/data/')[1]
+            labels_list.append(self.gt_label_dict[ip])
+        
+        gt_labels = np.array(labels_list)
+        tp, total = 0, 0
+        split_clean_dataset = {}
+        for cls in range(self.num_classes):
+            #print(f"----------------- the class {cls} information -------------------")
+            cls_index = noise_labels == cls
+            cls_images = image_features[cls_index, :]
+            cls_impath = sstrain_img_paths[cls_index]
+            cls_gtlabels = gt_labels[cls_index]
+            
+            #o2_distance = np.zeros((cls_images.shape[0], cls_images.shape[0]))
+            clsbag_cossim = np.zeros((cls_images.shape[0], cls_images.shape[0]))
+            vl_cossim = np.zeros((cls_images.shape[0], texts_matrix.shape[0]))
+            for i in range(cls_images.shape[0]):
+                # step 1: calculate the similarity of iamge features in one class bag
+                for j in range(cls_images.shape[0]):
+                    clsbag_cossim[i, j] = torch.sqrt(torch.sum((cls_images[i, :].unsqueeze(0) - cls_images[j, :].unsqueeze(0)) ** 2))
+                    #clsbag_cossim[i, j] = F.cosine_similarity(cls_images[i, :].unsqueeze(0), cls_images[j, :].unsqueeze(0))
+
+                # step 2: calcuate the cosine similarity of image features with text features
+                for block in range(texts_matrix.shape[0]):
+                    vl_cossim[i, block] = F.cosine_similarity(cls_images[i, :].unsqueeze(0), texts_matrix[block, cls, :].cuda().unsqueeze(0))
+
+            """
+            print("Testing the similarities distribution of CLS_SIM")
+            if cls == 0:
+                for i in range(clsbag_cossim.shape[0]):
+                    print(f"index: {i}  nlabel: {cls}  tlabel: {cls_gtlabels[i]}  min_sim: {clsbag_cossim[i, :].min():.4f}  mean_sim: {clsbag_cossim[i, :].mean():.4f}  std_sim: {clsbag_cossim[i, :].std():.4f}  ip: {cls_impath[i]}")
+                    print(clsbag_cossim[i])
+                    #for j in range(clsbag_cossim.shape[1]):
+                    #    print(clsbag_cossim[i, j], end='  ')
+            """
+            cls_sim = clsbag_cossim.mean(axis=1).reshape(-1, 1)
+            #cls_sim = (cls_sim.max() - cls_sim) / cls_sim.max()
+            #k = self.cfg.TRAINER.POMA.K
+            """
+            cls_sim = []
+            for row in o2_distance:
+                index = np.argsort(row)[:k]
+                cls_sim.append(np.mean(clsbag_cossim[index]))
+            cls_sim = np.array(cls_sim).reshape(-1, 1)
+            """
+            vl_sim = vl_cossim.mean(axis=1).reshape(-1, 1)
+            # cls_sim, vl_sim = clsbag_cossim.mean(axis=1).reshape(-1, 1), vl_cossim.mean(axis=1).reshape(-1, 1)
+            cls_sim, vl_sim = normalize(cls_sim), normalize(vl_sim)
+            alpha = 0.2 * np.exp(epoch / 35)
+            robust_similarity = -(1 - alpha) * cls_sim + alpha * vl_sim
+            
+            """
+            # fit a two-component GMM to the loss
+            gmm1 = GaussianMixture(n_components=2,max_iter=10,tol=1e-2,reg_covar=5e-4)
+            gmm1.fit(robust_similarity)
+            prob1 = gmm1.predict_proba(robust_similarity)
+            prob1 = prob1[:, gmm1.means_.argmax()]
+            """
+            gmm2 = GaussianMixture(n_components=2,max_iter=10,tol=1e-2,reg_covar=5e-4)
+            gmm2.fit(vl_sim)
+            prob2 = gmm2.predict_proba(vl_sim)
+            prob2 = prob2[:, gmm2.means_.argmax()]
+            
+
+            # select the traing samples
+            #tp, total = 0, 0
+            thredhold = self.cls_confident_samples[cls] / max(self.cls_confident_samples) * self.cfg.TRAINER.POMA.TAU
+            #thredhold = 0.5
+            for row in range(clsbag_cossim.shape[0]):
+                ip = cls_impath[row]
+                ip = './data/' + ip.split('/data/')[1]
+                if prob2[row] >= thredhold:
+                #if robust_similarity >= thredhold:
+                    split_clean_dataset[ip] = cls
+                    
+                    if cls == cls_gtlabels[row]: tp += 1
+                    total += 1
+
+                #print(f"* nlabel: {cls} tlabel: {cls_gtlabels[row]} cls_sim: {cls_sim[row, 0]:.4f} vl_sim: {vl_sim[row, 0]:.4f} prob1: {prob1[row]:.4f} prob2: {prob2[row]:.4f} *")       
+            #print(f"total samples: {cnt}")
+            if total == 0:
+                clean_rate = 0
+            else:
+                clean_rate = tp / total
+
+            #print(f"epoch [{epoch}]   class: {cls}   total samples: {total}    tp samples: {tp}    clean rate: {clean_rate:.4f}  confident_samples: {self.cls_confident_samples[cls]}  thredhold: {thredhold:.3f}")
+        print(f"epoch [{epoch}]     total samples: {total}    tp samples: {tp}    clean rate: {clean_rate:.4f}")
+        return split_clean_dataset
+
     def eval_train(self, epoch, trainer_list=None):
         """A generic testing pipeline."""
 
