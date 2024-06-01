@@ -4,7 +4,7 @@ cd ..
 
 # custom config
 DATA=./data
-TRAINER=POMA
+TRAINER=DPL
 
 DATASET=$1
 CFG=$2  # config file
@@ -15,7 +15,7 @@ BLOCK=$6  # number of blocks
 CSC=$7  # class-specific context (False or True)
 CLASS_EQULE=$8  # CLASS_EQULE True of False
 TAG=$9 # log tag (multiple_models_random_init or rn50_random_init)
-FP=${10} # number of false positive training samples per class
- 
-DIR=./output/${DATASET}/${TRAINER}/${CFG}_${SHOTS}shots_EQULE_${CLASS_EQULE}_${CONF_THRESHOLD}_${BLOCK}block_${TAG}/nctx${NCTX}_csc${CSC}_ctp${CTP}_fp${FP}/
-python parse_test_res.py --directory ${DIR} --test-log --ci95
+BETA=${10}  # weight to balance logits and prediction
+
+DIR=./output/${DATASET}/${TRAINER}/${CFG}_${SHOTS}shots_EQULE_${CLASS_EQULE}_${CONF_THRESHOLD}_${BLOCK}block_${TAG}/${BETA}beta/
+python parse_test_res.py --directory ${DIR} --multi-exp --test-log --ci95 >> ./output/${DATASET}/${TRAINER}/${CFG}_${SHOTS}shots_EQULE_${CLASS_EQULE}_${CONF_THRESHOLD}_${BLOCK}block_${TAG}/${BETA}beta.txt

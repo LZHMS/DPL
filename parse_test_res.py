@@ -63,8 +63,9 @@ def compute_ci95(res):
 
 def parse_function(*metrics, directory="", args=None, end_signal=None):
     print(f"Parsing files in {directory}")
+    print(directory)
     subdirs = listdir_nohidden(directory, sort=True)
-
+    
     outputs = []
 
     for subdir in subdirs:
@@ -110,6 +111,7 @@ def parse_function(*metrics, directory="", args=None, end_signal=None):
         print(msg)
 
     output_results = OrderedDict()
+    output_std = OrderedDict()
 
     print("===")
     print(f"Summary of directory: {directory}")
@@ -118,9 +120,10 @@ def parse_function(*metrics, directory="", args=None, end_signal=None):
         std = compute_ci95(values) if args.ci95 else np.std(values)
         print(f"* {key}: {avg:.2f}% +- {std:.2f}%")
         output_results[key] = avg
+        output_std[key] = std
     print("===")
 
-    return output_results
+    return output_results, output_std
 
 
 def main(args, end_signal):
@@ -131,17 +134,24 @@ def main(args, end_signal):
 
     if args.multi_exp:
         final_results = defaultdict(list)
+        final_std = defaultdict(list)
 
         for directory in listdir_nohidden(args.directory, sort=True):
             directory = osp.join(args.directory, directory)
-            results = parse_function(
+            results, out_std = parse_function(
                 metric, directory=directory, args=args, end_signal=end_signal
             )
 
             for key, value in results.items():
                 final_results[key].append(value)
+                final_std[key].append(out_std[key])
+            
+        print("Summarize performance")
+        for key, values in final_results.items():
+            for id, v in enumerate(values):
+                print(f"| {v:.2f}% +- {final_std[key][id]:.2f}%", end=' ')
 
-        print("Average performance")
+        print("|\nAverage performance")
         for key, values in final_results.items():
             avg = np.mean(values)
             print(f"* {key}: {avg:.2f}%")

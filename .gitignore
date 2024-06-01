@@ -1,6 +1,7 @@
 analysis_results_test/*
 analyze_results/*
 prompt_learner/
+prompt_learnerA/
+prompt_learnerB/
 tensorboard/
-NoiseAnalysis/
 *.pyc

@@ -1,6 +1,5 @@
 import argparse
 import torch
-# torch.set_printoptions(profile="full")
 import os
 
 from dassl.utils import setup_logger, set_random_seed, collect_env_info
@@ -22,6 +21,7 @@ import datasets.imagenet
 
 import trainers.upltrainer
 import trainers.poma
+import trainers.dpl
 
 def print_args(args, cfg):
     print('***************')
@@ -103,6 +103,19 @@ def extend_cfg(cfg, args):
     cfg.TRAINER.POMA.K = 6  # top-k similarities
     cfg.TRAINER.POMA.TAU = 0.7
 
+    cfg.TRAINER.DPL = CN()
+    cfg.TRAINER.DPL.N_CTX = 16  # number of context vectors
+    cfg.TRAINER.DPL.CSC = False  # class-specific context
+    cfg.TRAINER.DPL.CTX_INIT = ""  # initialization words
+    cfg.TRAINER.DPL.CLEAN_INIT = ""  # initialization words
+    cfg.TRAINER.DPL.NOISY_INIT = ""  # initialization words
+    cfg.TRAINER.DPL.PREC = "fp16"  # fp16, fp32, amp
+    cfg.TRAINER.DPL.CLASS_TOKEN_POSITION = "end"  # 'middle' or 'end' or 'front'
+    cfg.TRAINER.DPL.NUM_FP = args.num_fp  # false positive training samples per class
+    cfg.TRAINER.DPL.USE_ROBUSTLOSS = args.use_robustloss  # use robust loss (GCE)
+    cfg.TRAINER.DPL.N_BLOCK = 8  # number of prompt blocks
+    cfg.TRAINER.DPL.BETA = 0.5  # weight to balance logits and prediction
+
 def setup_cfg(args):
     cfg = get_cfg_default()
     extend_cfg(cfg, args)
@@ -156,11 +169,6 @@ def main(args):
         trainer.dm.update_ssdateloader(predict_label_dict)
         trainer.train_loader_sstrain = trainer.dm.train_loader_sstrain
 
-        # select the clean few-shots dataset
-        trainer.cls_confident_samples = [1 for _ in range(trainer.num_classes)]
-        split_clean_dataset = trainer.split_dataset_by_bisimilarities(0)
-        trainer.dm.split_ssdateloader(split_clean_dataset)
-        trainer.train_loader_sptrain = trainer.dm.train_loader_sptrain
         trainer.sstrain_with_id(model_id=i)
 
 if __name__ == '__main__':
