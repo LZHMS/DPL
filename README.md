@@ -153,25 +153,75 @@ CUDA_VISIBLE_DEVICES=0 bash parse_test.sh ${DATASET} rn50_ep50 end 16 16 2 False
 |0.9| 62.49% +- 0.31% | 61.05% +- 0.33% | 59.48% +- 0.96% | 53.03% +- 1.61% |59.01%|
 |1.0| 63.10% +- 0.39% | 60.22% +- 0.48% | 59.18% +- 1.12% | 51.91% +- 2.52% |58.60%|
 
+### Abalation Study for Caltech101 -- prompt blocks
++ dataset: Dtd
++ noise rate: 0 | 12.5% | 25% | 50%
++ backbone: Text: ViT-B/32-PT, Visual: RN50-PT
++ weight parameter beta: 0.5
+
+|Prompt Blocks|Noise Rate|Noise Rate|Noise Rate|Noise Rate|MeanAcc|
+|:------:|:------:|:------:|:------:|:------:|:------:|
+||0|12.5%|25%|50%||
+|PTNL|90.65%|82.51%|78.70%|70.13%|80.50%|
+|1| 91.33% +- 0.29% | 90.48% +- 0.57% | 88.93% +- 0.17% | 85.37% +- 1.87% | 89.03% |
+|2| 91.37% +- 0.17% | 90.82% +- 0.17% | 89.36% +- 0.47% | 84.12% +- 2.33% | 88.92% |
+|4| 91.25% +- 0.65% | 90.68% +- 0.14% | 89.16% +- 0.04% | 84.41% +- 2.72% | 88.88% |
+
+### Abalation Study for Caltech101 -- weight parameter
++ dataset: Dtd
++ noise rate: 0 | 12.5% | 25% | 50%
++ backbone: Text: ViT-B/32-PT, Visual: RN50-PT
++ prompt blocks m: 4
+
+|Beta|Noise Rate|Noise Rate|Noise Rate|Noise Rate|MeanAcc|
+|:------:|:------:|:------:|:------:|:------:|:------:|
+||0|12.5%|25%|50%||
+|PTNL|90.65%|82.51%|78.70%|70.13%|80.50%|
+|0.0| 90.90% +- 0.34% | 90.56% +- 0.29% | 90.17% +- 0.18% | 88.67% +- 0.25% |90.07%|
+|0.1| 91.02% +- 0.30% | 90.92% +- 0.11% | 90.29% +- 0.52% | 88.94% +- 0.61% |90.29%|
+|0.2| 90.90% +- 0.21% | 90.97% +- 0.28% | 90.24% +- 0.19% | 88.75% +- 0.73% |90.21%|
+|0.3| 91.04% +- 0.25% | 90.40% +- 0.15% | 90.01% +- 0.14% | 88.56% +- 0.67% |90.00%|
+|0.4| 91.00% +- 0.42% | 90.72% +- 0.18% | 89.93% +- 0.17% | 87.75% +- 0.90% |89.85%|
+|0.5| 91.25% +- 0.65% | 90.68% +- 0.14% | 89.16% +- 0.04% | 84.41% +- 2.72% |88.88%|
+|0.6| 91.07% +- 0.21% | 90.45% +- 0.30% | 88.63% +- 0.63% | 83.02% +- 2.72% |88.29%|
+|0.7| 90.86% +- 0.24% | 90.57% +- 0.30% | 88.69% +- 0.19% | 83.08% +- 3.39% |88.30%|
+|0.8| 91.14% +- 0.36% | 90.52% +- 0.29% | 89.55% +- 0.52% | 81.42% +- 1.66% |88.16%|
+|0.9| 90.98% +- 0.02% | 90.18% +- 0.59% | 88.92% +- 0.42% | 83.48% +- 1.10% |88.39%|
+|1.0| 91.25% +- 0.37% | 90.64% +- 0.30% | 89.24% +- 0.58% | 84.46% +- 0.75% |88.90%|
+
 ### Raw Materials
 Model traning logs can be found in the `log.txt` under each experiment directory.
 
 Parsing results can be found in the following files:
-
-+ [DPL RN50_EP50_16SHOTS_1BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__1block_rn50_random_init/0.5beta.txt)
-+ [DPL RN50_EP50_16SHOTS_2BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__2block_rn50_random_init/0.5beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.0BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.0beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.1BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.1beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.2BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.2beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.3BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.3beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.4BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.4beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.5beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.6BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.6beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.7BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.7beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.8BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.8beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_0.9BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.9beta.txt)
-+ [DPL RN50_EP50_16SHOTS_4BLOCK_1.0BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/1.0beta.txt)
-+ [DPL RN50_EP50_16SHOTS_6BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__6block_rn50_random_init/0.5beta.txt)
++ Dataset: Dtd
+    + [DPL RN50_EP50_16SHOTS_1BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__1block_rn50_random_init/0.5beta.txt)
+    + [DPL RN50_EP50_16SHOTS_2BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__2block_rn50_random_init/0.5beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.0BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.0beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.1BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.1beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.2BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.2beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.3BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.3beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.4BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.4beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.5beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.6BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.6beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.7BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.7beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.8BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.8beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.9BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.9beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_1.0BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/1.0beta.txt)
+    + [DPL RN50_EP50_16SHOTS_6BLOCK_0.5BETA ON Dtd](./output/ssdtd/DPL/rn50_ep50_16shots_EQULE_True__6block_rn50_random_init/0.5beta.txt)
++ Dataset: Caltech101
+    + [DPL RN50_EP50_16SHOTS_1BLOCK_0.5BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__1block_rn50_random_init/0.5beta.txt)
+    + [DPL RN50_EP50_16SHOTS_2BLOCK_0.5BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__2block_rn50_random_init/0.5beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.0BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.0beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.1BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.1beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.2BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.2beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.3BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.3beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.4BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.4beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.5BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.5beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.6BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.6beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.7BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.7beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.8BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.8beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_0.9BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/0.9beta.txt)
+    + [DPL RN50_EP50_16SHOTS_4BLOCK_1.0BETA ON Caltech101](./output/sscaltech101/DPL/rn50_ep50_16shots_EQULE_True__4block_rn50_random_init/1.0beta.txt)
 
 ## References
 + [CoOp](https://github.com/KaiyangZhou/CoOp)
