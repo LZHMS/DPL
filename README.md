@@ -131,6 +131,19 @@ CUDA_VISIBLE_DEVICES=0 bash parse_test.sh ${DATASET} rn50_ep50 end 16 16 2 False
 |4| **63.51% +- 0.94%** | 61.37% +- 0.71% | 59.97% +- 0.88% | **54.73% +- 0.89%** |
 |6| 63.06% +- 0.41% | 60.93% +- 0.66% | 59.91% +- 1.06% | 54.43% +- 1.90% |
 
++ dataset: Caltech101
++ noise rate: 0 | 12.5% | 25% | 50%
++ backbone: Text: ViT-B/32-PT, Visual: RN50-PT
++ weight parameter beta: 0.5
+
+|Prompt Blocks|Noise Rate|Noise Rate|Noise Rate|Noise Rate|MeanAcc|
+|:------:|:------:|:------:|:------:|:------:|:------:|
+||0|12.5%|25%|50%||
+|PTNL|90.65%|82.51%|78.70%|70.13%|80.50%|
+|1| 91.33% +- 0.29% | 90.48% +- 0.57% | 88.93% +- 0.17% | 85.37% +- 1.87% | 89.03% |
+|2| 91.37% +- 0.17% | 90.82% +- 0.17% | 89.36% +- 0.47% | 84.12% +- 2.33% | 88.92% |
+|4| 91.25% +- 0.65% | 90.68% +- 0.14% | 89.16% +- 0.04% | 84.41% +- 2.72% | 88.88% |
+
 ### Abalation Study for DPL -- weight parameter
 + dataset: Dtd
 + noise rate: 0 | 12.5% | 25% | 50%
@@ -153,22 +166,7 @@ CUDA_VISIBLE_DEVICES=0 bash parse_test.sh ${DATASET} rn50_ep50 end 16 16 2 False
 |0.9| 62.49% +- 0.31% | 61.05% +- 0.33% | 59.48% +- 0.96% | 53.03% +- 1.61% |59.01%|
 |1.0| 63.10% +- 0.39% | 60.22% +- 0.48% | 59.18% +- 1.12% | 51.91% +- 2.52% |58.60%|
 
-### Abalation Study for Caltech101 -- prompt blocks
-+ dataset: Dtd
-+ noise rate: 0 | 12.5% | 25% | 50%
-+ backbone: Text: ViT-B/32-PT, Visual: RN50-PT
-+ weight parameter beta: 0.5
-
-|Prompt Blocks|Noise Rate|Noise Rate|Noise Rate|Noise Rate|MeanAcc|
-|:------:|:------:|:------:|:------:|:------:|:------:|
-||0|12.5%|25%|50%||
-|PTNL|90.65%|82.51%|78.70%|70.13%|80.50%|
-|1| 91.33% +- 0.29% | 90.48% +- 0.57% | 88.93% +- 0.17% | 85.37% +- 1.87% | 89.03% |
-|2| 91.37% +- 0.17% | 90.82% +- 0.17% | 89.36% +- 0.47% | 84.12% +- 2.33% | 88.92% |
-|4| 91.25% +- 0.65% | 90.68% +- 0.14% | 89.16% +- 0.04% | 84.41% +- 2.72% | 88.88% |
-
-### Abalation Study for Caltech101 -- weight parameter
-+ dataset: Dtd
++ dataset: Caltech101
 + noise rate: 0 | 12.5% | 25% | 50%
 + backbone: Text: ViT-B/32-PT, Visual: RN50-PT
 + prompt blocks m: 4
