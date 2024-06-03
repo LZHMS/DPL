@@ -113,7 +113,7 @@ CUDA_VISIBLE_DEVICES=0 bash parse_test.sh ${DATASET} rn50_ep50 end 16 16 2 False
 ```
 
 ## Framework
-<img src="https://cdn.jsdelivr.net/gh/LZHMS/picx-images-hosting@master/EBlog/Paper/Model.3nrgjq37da.webp" alt="Model" />
+<img src="./images/Framework.webp" alt="Model" />
 
 ## Results
 ### Abalation Study for DPL -- prompt blocks
