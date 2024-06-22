@@ -46,7 +46,7 @@ python setup.py develop
 cd ..
 
 # Clone the PTNL repository
-git clone https://github.com/CEWu/PTNL
+git clone -b DPL https://github.com/LZHMS/DPL.git
 cd PTNL/
 
 # Install necessary packages for CLIP
